@@ -14,10 +14,17 @@
 
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-WGCDMN8MFC"></script>
     <script>
-        window.dataLayer = window.dataLayer || [];
-        function gtag(){dataLayer.push(arguments);}
-        gtag('js', new Date());
-        gtag('config', 'G-WGCDMN8MFC');
+      window.dataLayer = window.dataLayer || [];
+
+      function gtag(){dataLayer.push(arguments);}
+
+      gtag('js', new Date());
+
+      // FORCE page view send
+      gtag('config', 'G-WGCDMN8MFC', {
+        page_path: window.location.pathname,
+        send_page_view: true
+      });
     </script>
 
 </head>
