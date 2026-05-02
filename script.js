@@ -311,36 +311,6 @@ class SmoothScroll {
   }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-  const particleCanvas = document.getElementById('particleCanvas');
-  const particles = new ParticleSystem(particleCanvas);
-  particles.animate();
-
-  new CursorTrail();
-  new ThemeManager();
-  new NavManager();
-  new ScrollObserver();
-  new StatCounter();
-  new CardTilt();  
-  new ExternalLinks();
-  new PerformanceMonitor();
-  new KeyboardShortcuts();
-  new SmoothScroll();
-
-  if (STATE.reduced) {
-    document.body.classList.add('reduce-motion');
-  }
-
-  document.addEventListener('scroll', () => {
-    STATE.scrollPos = window.scrollY;
-  });
-});
-/*
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('#').catch(() => {});
-}
-*/
-
 class CardTilt {
   constructor() {
     this.init();
@@ -373,3 +343,34 @@ class CardTilt {
     card.style.transform = 'perspective(1000px) rotateX(0deg) rotateY(0deg) scale(1)';
   }
 }
+
+
+document.addEventListener('DOMContentLoaded', () => {
+  const particleCanvas = document.getElementById('particleCanvas');
+  const particles = new ParticleSystem(particleCanvas);
+  particles.animate();
+
+  new CursorTrail();
+  new ThemeManager();
+  new NavManager();
+  new ScrollObserver();
+  new StatCounter();
+  new CardTilt();  
+  new ExternalLinks();
+  new PerformanceMonitor();
+  new KeyboardShortcuts();
+  new SmoothScroll();
+
+  if (STATE.reduced) {
+    document.body.classList.add('reduce-motion');
+  }
+
+  document.addEventListener('scroll', () => {
+    STATE.scrollPos = window.scrollY;
+  });
+});
+/*
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('#').catch(() => {});
+}
+*/
