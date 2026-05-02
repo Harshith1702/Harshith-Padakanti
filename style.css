@@ -1500,6 +1500,24 @@ footer {
   font-size: 0.8rem;
 }
 
+.pr-item.featured {
+  border-color: var(--accent);
+  background: linear-gradient(135deg, var(--surface-dark), rgba(255, 23, 68, 0.05));
+}
+
+.pr-item.featured .pr-num {
+  color: var(--accent);
+}
+
+.pr-item.featured .pr-title {
+  color: var(--text-dark);
+}
+
+.pr-item.plain {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
 /*
 .animated {
   opacity: 1 !important;
