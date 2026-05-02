@@ -12,19 +12,22 @@
     <link rel="stylesheet" href="style.css">
 
 
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-WGCDMN8MFC"></script>
+    <script src="https://www.googletagmanager.com/gtag/js?id=G-WGCDMN8MFC"></script>
     <script>
       window.dataLayer = window.dataLayer || [];
-
       function gtag(){dataLayer.push(arguments);}
 
       gtag('js', new Date());
 
-      // FORCE page view send
+      // FORCE page view explicitly
       gtag('config', 'G-WGCDMN8MFC', {
-        page_path: window.location.pathname,
-        send_page_view: true
+        send_page_view: true,
+        page_title: document.title,
+        page_location: window.location.href
       });
+
+      // ALSO send manual page_view event
+      gtag('event', 'page_view');
     </script>
 
 </head>
