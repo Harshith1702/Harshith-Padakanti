@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Harshith Padakanti - Backend Developer</title>
+    <meta name="description" content="Backend developer. Open source contributor. I solve problems. People are usually not one of them.">
+    <meta name="author" content="Harshith Padakanti">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <canvas id="particleCanvas"></canvas>
+    
+    <div class="cursor-custom" id="customCursor"></div>
+    
+    <nav class="navbar" id="navbar">
+        <div class="nav-container">
+            <a href="#hero" class="nav-brand">Harshith</a>
+            <div class="nav-links">
+                <a href="#about">About</a>
+                <a href="#projects">Projects</a>
+                <a href="#other-projects">Others</a>
+                <a href="#skills">Skills</a>
+                <a href="#cp">CP</a>
+                <a href="#open-source">Open Source</a>
+                <a href="#contact">Contact</a>
+            </div>
+            <div class="nav-actions">
+                <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
+                    <span class="toggle-icon">◐</span>
+                </button>
+                <a href="Harshith_Resume.pdf" download class="btn-resume">Resume</a>
+            </div>
+        </div>
+    </nav>
+
+    <section class="hero" id="hero">
+        <div class="hero-wrapper">
+            <div class="hero-content">
+                <div class="hero-text-group">
+                    <p class="hero-subtitle">Backend Developer</p>
+                    <h1 class="hero-title">
+                        <span class="title-word">Harshith</span>
+                        <span class="title-word">Padakanti</span>
+                    </h1>
+                    <p class="hero-tagline">I solve problems. People are usually not one of them.</p>
+                    <p class="hero-description">
+                        2nd year CSE student at CMR Technical Campus. Node.js, Express, Socket.IO. 
+                        DSA daily. Open source when it matters. Currently hunting backend internships for Summer 2026.
+                    </p>
+                    <div class="hero-cta">
+                        <a href="mailto:harshaharshith31@gmail.com" class="btn btn-primary">Get in touch</a>
+                        <a href="https://github.com/Harshith1702" target="_blank" rel="noopener" class="btn btn-secondary">GitHub</a>
+                        <a href="https://www.linkedin.com/in/harshith-padakanti/" target="_blank" rel="noopener" class="btn btn-secondary">LinkedIn</a>
+                    </div>
+                </div>
+                <div class="hero-image-wrapper">
+                    <div class="hero-image">
+                        <img src="hero.jpg" class="hero-img" alt="Harshith Padakanti">
+                    </div>
+                </div>
+            </div>
+            <div class="hero-scroll-indicator">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+    </section>
+
+    <section class="about" id="about">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">About</h2>
+                <div class="section-line"></div>
+            </div>
+            <div class="about-grid">
+                <div class="about-image">
+                    <img src="about.jpg" alt="Harshith in casual wear">
+                </div>
+                <div class="about-content">
+                    <p>
+                        Backend systems. Node.js, Express, Socket.IO. Real-time architecture. 
+                        DSA in Java every single day because consistency is the only philosophy I trust.
+                    </p>
+                    <p>
+                        Contributed to Rocket.Chat's message-parser package. 3 PRs merged via batch PR 
+                        <a href="https://github.com/RocketChat/Rocket.Chat/pull/39853" target="_blank" rel="noopener">#39853</a> 
+                        with 10 contributors total. TypeScript, testing, edge cases.
+                    </p>
+                    <p>
+                        Selected for NSoC 2026, GSSoC 2026, SSoC 2026. NSoC already has 5 PRs merged. 
+                        Open source is interesting work. The rest doesn't matter.
+                    </p>
+                    <p>
+                        Currently seeking backend internship for Summer 2026. If the problem is interesting, 
+                        I'm listening.
+                    </p>
+                </div>
+                <div class="about-stats">
+                    <div class="stat-box">
+                        <div class="stat-value">8.84</div>
+                        <div class="stat-label">CGPA</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value">350+</div>
+                        <div class="stat-label">LC Problems</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value">8+</div>
+                        <div class="stat-label">PRs Merged</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value">3</div>
+                        <div class="stat-label">OSS Programs</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="projects" id="projects">
+    <div class="container">
+        <div class="section-header">
+            <h2 class="section-title">Featured Projects</h2>
+            <div class="section-line"></div>
+        </div>
+        <div class="projects-grid">
+            <div class="project-card featured">
+                <div class="project-tag">Featured</div>
+                <h3>Open Chat Application</h3>
+                <p>Real-time chat rooms. Password-protected. Typing indicators. Hard cap at 100 users per room with auto-cleanup on disconnect. In-memory session tracking. Debounced socket broadcasts.</p>
+                <div class="project-tech">
+                    <span>Node.js</span>
+                    <span>Express</span>
+                    <span>Socket.IO</span>
+                    <span>JavaScript</span>
+                </div>
+                <div class="project-links">
+                    <a href="https://open-chat-application-ubti.onrender.com" target="_blank" rel="noopener">Live</a>
+                    <a href="https://github.com/Harshith1702/Open_Chat_Application" target="_blank" rel="noopener">Code</a>
+                </div>
+            </div>
+
+            <div class="project-card featured">
+                <div class="project-tag">Featured</div>
+                <h3>LeetCode Grind Tracker</h3>
+                <p>Full-stack tracker for daily submissions. Python fetches data, MySQL stores it, PHP exposes REST API, JavaScript dashboard visualizes difficulty breakdowns, weak topics, streaks.</p>
+                <div class="project-tech">
+                    <span>Python</span>
+                    <span>PHP</span>
+                    <span>MySQL</span>
+                    <span>JavaScript</span>
+                </div>
+                <div class="project-links">
+                    <a href="https://github.com/Harshith1702/leetcode-grind-tracker" target="_blank" rel="noopener">Code</a>
+                </div>
+            </div>
+
+            <div class="project-card featured">
+                <div class="project-tag">Automation</div>
+                <h3>LeetCode Discord Reporter</h3>
+                <p>GitHub Actions pipeline with cron-job.org scheduling. Posts daily accepted submissions to Discord every night at 10:15 PM IST. Zero maintenance. Set it once and forget it.</p>
+                <div class="project-tech">
+                    <span>Python</span>
+                    <span>GitHub Actions</span>
+                    <span>Automation</span>
+                </div>
+                <div class="project-links">
+                    <a href="https://github.com/Harshith1702/leetcode-discord-reporter" target="_blank" rel="noopener">Code</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="other-projects" id="other-projects">
+    <div class="container">
+        <div class="section-header">
+            <h2 class="section-title">Other Projects</h2>
+            <div class="section-line"></div>
+        </div>
+        <div class="projects-grid">
+            <div class="project-card">
+                <div class="project-tag">System Design</div>
+                <h3>Social Media Follower System</h3>
+                <p>C-based social media simulation. User creation, follow/unfollow, search, and suggestions using data structures.</p>
+                <div class="project-tech">
+                    <span>C</span>
+                    <span>Data Structures</span>
+                    <span>File Handling</span>
+                </div>
+                <div class="project-links">
+                    <a href="https://github.com/Harshith1702/Social_Media_Follower_System_C" target="_blank" rel="noopener">Code</a>
+                </div>
+            </div>
+
+            <div class="project-card">
+                <div class="project-tag">Frontend</div>
+                <h3>Eclipse Attendance App</h3>
+                <p>QR-based attendance management prototype. Frontend-only with practical UI/UX for tracking systems.</p>
+                <div class="project-tech">
+                    <span>HTML5</span>
+                    <span>CSS3</span>
+                    <span>JavaScript</span>
+                </div>
+                <div class="project-links">
+                    <a href="https://github.com/Harshith1702/eclipse-attendance-app" target="_blank" rel="noopener">Code</a>
+                </div>
+            </div>
+
+            <div class="project-card">
+                <div class="project-tag">Web Scraping</div>
+                <h3>Web Scraper</h3>
+                <p>HTML parsing and CSV extraction using Jsoup, Requests, and BeautifulSoup. Java and Python implementations.</p>
+                <div class="project-tech">
+                    <span>Python</span>
+                    <span>Java</span>
+                    <span>Jsoup</span>
+                </div>
+                <div class="project-links">
+                    <a href="https://github.com/Harshith1702/Web_Scraper" target="_blank" rel="noopener">Code</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section><br><br><br><br>
+
+    <section class="skills" id="skills">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Skills</h2>
+                <div class="section-line"></div>
+            </div>
+            <div class="skills-grid">
+                <div class="skill-group">
+                    <h4>Languages</h4>
+                    <div class="skill-tags">
+                        <span class="skill-tag">Java</span>
+                        <span class="skill-tag">JavaScript</span>
+                        <span class="skill-tag">Python</span>
+                        <span class="skill-tag">C</span>
+                        <span class="skill-tag">PHP</span>
+                    </div>
+                </div>
+                <div class="skill-group">
+                    <h4>Backend</h4>
+                    <div class="skill-tags">
+                        <span class="skill-tag">Node.js</span>
+                        <span class="skill-tag">Express.js</span>
+                        <span class="skill-tag">Socket.IO</span>
+                        <span class="skill-tag">REST APIs</span>
+                        <span class="skill-tag">MySQL</span>
+                    </div>
+                </div>
+                <div class="skill-group">
+                    <h4>Concepts</h4>
+                    <div class="skill-tags">
+                        <span class="skill-tag">DSA</span>
+                        <span class="skill-tag">OOP</span>
+                        <span class="skill-tag">Real-Time Systems</span>
+                        <span class="skill-tag">Event-Driven</span>
+                    </div>
+                </div>
+                <div class="skill-group">
+                    <h4>Tools</h4>
+                    <div class="skill-tags">
+                        <span class="skill-tag">Git</span>
+                        <span class="skill-tag">GitHub</span>
+                        <span class="skill-tag">GitHub Actions</span>
+                        <span class="skill-tag">Render</span>
+                        <span class="skill-tag">Arduino</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="cp-section" id="cp">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Competitive Programming</h2>
+                <div class="section-line"></div>
+            </div>
+            <div class="cp-grid">
+                <div class="cp-card">
+                    <div class="cp-header">
+                        <h3>LeetCode</h3>
+                        <div class="cp-badge">Top 15%</div>
+                    </div>
+                    <div class="cp-stats">
+                        <div class="cp-stat">
+                            <div class="cp-number">1720+</div>
+                            <div class="cp-label">Rating</div>
+                        </div>
+                        <div class="cp-stat">
+                            <div class="cp-number">350+</div>
+                            <div class="cp-label">Solved</div>
+                        </div>
+                        <div class="cp-stat">
+                            <div class="cp-number">40+</div>
+                            <div class="cp-label">Contests</div>
+                        </div>
+                    </div>
+                    <a href="https://leetcode.com/u/Harshith-2007/" target="_blank" rel="noopener" class="cp-link">Visit Profile</a>
+                </div>
+
+                <div class="cp-card">
+                    <div class="cp-header">
+                        <h3>CodeChef</h3>
+                        <div class="cp-badge">2 Star</div>
+                    </div>
+                    <div class="cp-stats">
+                        <div class="cp-stat">
+                            <div class="cp-number">2★</div>
+                            <div class="cp-label">Rating</div>
+                        </div>
+                        <div class="cp-stat">
+                            <div class="cp-number">270+</div>
+                            <div class="cp-label">Solved</div>
+                        </div>
+                        <div class="cp-stat">
+                            <div class="cp-number">20+</div>
+                            <div class="cp-label">Contests</div>
+                        </div>
+                    </div>
+                    <a href="https://www.codechef.com/users/harshith_2007" target="_blank" rel="noopener" class="cp-link">Visit Profile</a>
+                </div>
+
+                <div class="cp-card">
+                    <div class="cp-header">
+                        <h3>Codeforces</h3>
+                        <div class="cp-badge">Competing</div>
+                    </div>
+                    <div class="cp-stats">
+                        <div class="cp-stat">
+                            <div class="cp-number">900+</div>
+                            <div class="cp-label">Rating</div>
+                        </div>
+                        <div class="cp-stat">
+                            <div class="cp-number">45+</div>
+                            <div class="cp-label">Solved</div>
+                        </div>
+                        <div class="cp-stat">
+                            <div class="cp-number">10+</div>
+                            <div class="cp-label">Contests</div>
+                        </div>
+                    </div>
+                    <a href="https://codeforces.com/profile/harshaharshith31" target="_blank" rel="noopener" class="cp-link">Visit Profile</a>
+                </div>
+
+                <div class="cp-card">
+                    <div class="cp-header">
+                        <h3>SmartInterviews</h3>
+                        <div class="cp-badge">Top 7%</div>
+                    </div>
+                    <div class="cp-stats">
+                        <div class="cp-stat">
+                            <div class="cp-number">3868</div>
+                            <div class="cp-label">Global Rank</div>
+                        </div>
+                        <div class="cp-stat">
+                            <div class="cp-number">170+</div>
+                            <div class="cp-label">Solved</div>
+                        </div>
+                        <div class="cp-stat">
+                            <div class="cp-number">53.9K</div>
+                            <div class="cp-label">Total Users</div>
+                        </div>
+                    </div>
+                    <a href="https://smartinterviews.in/profile/harshaharshith31" target="_blank" rel="noopener" class="cp-link">Visit Profile</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="open-source" id="open-source">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Open Source</h2>
+                <div class="section-line"></div>
+            </div>
+            <div class="oss-main">
+                <div class="oss-card">
+                    <div class="oss-header">
+                        <h3>Rocket.Chat</h3>
+                        <span class="oss-status">Merged</span>
+                    </div>
+                    <p class="oss-desc">
+                        3 PRs merged into develop via batch PR 
+                        <a href="https://github.com/RocketChat/Rocket.Chat/pull/39853" target="_blank" rel="noopener">#39853</a>
+                        (10 contributors). TypeScript, testing, edge case coverage.
+                    </p>
+                    <div class="pr-list">
+                        <a href="https://github.com/RocketChat/Rocket.Chat/pull/39455" target="_blank" rel="noopener" class="pr-item">
+                            <span class="pr-num">#39455</span>
+                            <span class="pr-title">Fixed timestamp parsing inside formatted text blocks</span>
+                        </a>
+                        <a href="https://github.com/RocketChat/Rocket.Chat/pull/39737" target="_blank" rel="noopener" class="pr-item">
+                            <span class="pr-num">#39737</span>
+                            <span class="pr-title">Test coverage for isNodeOfType type guard</span>
+                        </a>
+                        <a href="https://github.com/RocketChat/Rocket.Chat/pull/39733" target="_blank" rel="noopener" class="pr-item">
+                            <span class="pr-num">#39733</span>
+                            <span class="pr-title">Emoji parsing behavior tests in reducePlainTexts</span>
+                        </a>
+                    </div>
+                </div>
+
+                <div class="oss-programs">
+                    <div class="program-card">
+                        <div class="program-badge">Selected</div>
+                        <h4>GSSoC 2026</h4>
+                        <p>GirlScript Summer of Code</p>
+                        <div class="program-tech">
+                            <span>JavaScript</span>
+                            <span>TypeScript</span>
+                        </div>
+                    </div>
+
+                    <div class="program-card">
+                        <div class="program-badge active">5 PRs</div>
+                        <h4>NSoC 2026</h4>
+                        <p>Nexus Spring of Code. Bug fixes and code quality across projects.</p>
+                        <div class="program-tech">
+                            <span>JavaScript</span>
+                            <span>TypeScript</span>
+                        </div>
+                    </div>
+
+                    <div class="program-card">
+                        <div class="program-badge">Selected</div>
+                        <h4>SSoC 2026</h4>
+                        <p>Social Summer of Code</p>
+                        <div class="program-tech">
+                            <span>Open Source</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="achievements" id="achievements">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Achievements</h2>
+                <div class="section-line"></div>
+            </div>
+            <div class="achievements-list">
+                <div class="achievement-item">
+                    <div class="achievement-icon">◆</div>
+                    <div class="achievement-content">
+                        <h4>Smart India Hackathon 2025</h4>
+                        <p>Selected for SIH 2025 at CMR Technical Campus. Technovanza 5.0 Hackathon.</p>
+                    </div>
+                </div>
+                <div class="achievement-item">
+                    <div class="achievement-icon">◆</div>
+                    <div class="achievement-content">
+                        <h4>IoT Bootcamp</h4>
+                        <p>Sansa Innovations Pvt. Ltd. Hardware and embedded systems fundamentals.</p>
+                    </div>
+                </div>
+                <div class="achievement-item">
+                    <div class="achievement-icon">◆</div>
+                    <div class="achievement-content">
+                        <h4>C Programming Certification</h4>
+                        <p>Spoken Tutorial by IIT Bombay. First language. Most reliable one.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="contact" id="contact">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Get In Touch</h2>
+                <div class="section-line"></div>
+            </div>
+            <div class="contact-content">
+                <p class="contact-text">
+                    Backend internship opportunities. Interesting problems. Those are the things that make the inbox worth checking.
+                </p>
+                <div class="contact-links">
+                    <a href="mailto:harshaharshith31@gmail.com" class="contact-link primary">Email</a>
+                    <a href="https://github.com/Harshith1702" target="_blank" rel="noopener" class="contact-link">GitHub</a>
+                    <a href="https://www.linkedin.com/in/harshith-padakanti/" target="_blank" rel="noopener" class="contact-link">LinkedIn</a>
+                    <a href="https://leetcode.com/u/Harshith-2007/" target="_blank" rel="noopener" class="contact-link">LeetCode</a>
+                    <a href="https://www.codechef.com/users/harshith_2007" target="_blank" rel="noopener" class="contact-link">CodeChef</a>
+                    <a href="https://codeforces.com/profile/harshaharshith31" target="_blank" rel="noopener" class="contact-link">Codeforces</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <div class="container">
+            <p>Harshith Padakanti &copy; 2026 &mdash; the part that stayed.</p>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
