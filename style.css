@@ -1518,6 +1518,11 @@ footer {
   pointer-events: none;
 }
 
+.pr-item.featured {
+  border-color: var(--accent);
+  background: linear-gradient(135deg, var(--surface-dark), rgba(255, 23, 68, 0.05));
+}
+
 /*
 .animated {
   opacity: 1 !important;
