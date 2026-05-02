@@ -1523,6 +1523,36 @@ footer {
   background: linear-gradient(135deg, var(--surface-dark), rgba(255, 23, 68, 0.05));
 }
 
+.pr-item.featured {
+  border-color: var(--accent);
+  background: linear-gradient(135deg, rgba(255,23,68,0.15), rgba(255,23,68,0.05));
+  box-shadow: 0 4px 15px rgba(255,23,68,0.25), inset 0 1px 0 rgba(255,255,255,0.05);
+  transform: translateY(0);
+  transition: all 0.2s ease;
+}
+
+.pr-item.featured:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(255,23,68,0.35), inset 0 1px 0 rgba(255,255,255,0.08);
+}
+
+.pr-item.plain {
+  opacity: 0.75;
+  border-color: var(--border);
+  background: var(--surface-dark);
+}
+
+.pr-item.plain:hover {
+  opacity: 1;
+  border-color: rgba(255,23,68,0.3);
+}
+
+
+
+
+
+
+
 /*
 .animated {
   opacity: 1 !important;
