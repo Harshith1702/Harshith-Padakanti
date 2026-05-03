@@ -369,6 +369,74 @@ document.addEventListener('DOMContentLoaded', () => {
     STATE.scrollPos = window.scrollY;
   });
 });
+
+
+// ==========================
+// GOOGLE ANALYTICS TRACKING
+// ==========================
+
+// 1. Resume Click Tracking
+const resumeBtn = document.getElementById("resume-btn");
+if (resumeBtn) {
+  resumeBtn.addEventListener("click", () => {
+    gtag('event', 'resume_click', {
+      event_category: 'engagement',
+      event_label: 'resume'
+    });
+  });
+}
+
+// 2. Project Click Tracking
+const projects = document.querySelectorAll(".project");
+projects.forEach((project) => {
+  project.addEventListener("click", () => {
+    gtag('event', 'project_click', {
+      event_category: 'engagement',
+      event_label: project.innerText.trim()
+    });
+  });
+});
+
+// 3. Scroll Depth Tracking (50%)
+let scrollTracked = false;
+
+window.addEventListener("scroll", () => {
+  const scrollPercent =
+    (window.scrollY / (document.body.scrollHeight - window.innerHeight)) * 100;
+
+  if (!scrollTracked && scrollPercent > 50) {
+    scrollTracked = true;
+
+    gtag('event', 'scroll_50_percent', {
+      event_category: 'engagement',
+      event_label: 'half_page'
+    });
+  }
+});
+
+// 4. Time on Page (10 seconds)
+setTimeout(() => {
+  gtag('event', 'time_on_page_10s', {
+    event_category: 'engagement',
+    event_label: '10_seconds'
+  });
+}, 10000);
+
+// 5. Contact Click Tracking (if exists)
+const contactBtn = document.getElementById("contact-btn");
+if (contactBtn) {
+  contactBtn.addEventListener("click", () => {
+    gtag('event', 'contact_click', {
+      event_category: 'engagement',
+      event_label: 'contact'
+    });
+  });
+}
+
+
+
+
+
 /*
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('#').catch(() => {});
