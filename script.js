@@ -370,17 +370,28 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
+
+
+
 document.addEventListener("DOMContentLoaded", () => {
 
-  // Resume click
+  // ✅ Resume click 
   const resumeBtn = document.getElementById("resume-btn");
+
   if (resumeBtn) {
-    resumeBtn.addEventListener("click", () => {
+    resumeBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+
       gtag('event', 'resume_click');
+      console.log("resume tracked");
+
+      setTimeout(() => {
+        window.location.href = resumeBtn.href;
+      }, 300);
     });
   }
 
-  // Project clicks
+  // ✅ Project clicks
   const projects = document.querySelectorAll(".project");
   projects.forEach(p => {
     p.addEventListener("click", () => {
@@ -390,7 +401,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  // Contact click
+  // ✅ Contact click
   const contactBtn = document.getElementById("contact-btn");
   if (contactBtn) {
     contactBtn.addEventListener("click", () => {
@@ -398,7 +409,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // Scroll tracking
+  // ✅ Scroll tracking
   let sent = false;
   window.addEventListener("scroll", () => {
     let percent = (window.scrollY / (document.body.scrollHeight - window.innerHeight)) * 100;
@@ -410,8 +421,6 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
 });
-
-
 
 
 /*
