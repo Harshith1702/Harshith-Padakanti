@@ -370,69 +370,46 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
+document.addEventListener("DOMContentLoaded", () => {
 
-// ==========================
-// GOOGLE ANALYTICS TRACKING
-// ==========================
-
-// 1. Resume Click Tracking
-const resumeBtn = document.getElementById("resume-btn");
-if (resumeBtn) {
-  resumeBtn.addEventListener("click", () => {
-    gtag('event', 'resume_click', {
-      event_category: 'engagement',
-      event_label: 'resume'
-    });
-  });
-}
-
-// 2. Project Click Tracking
-const projects = document.querySelectorAll(".project");
-projects.forEach((project) => {
-  project.addEventListener("click", () => {
-    gtag('event', 'project_click', {
-      event_category: 'engagement',
-      event_label: project.innerText.trim()
-    });
-  });
-});
-
-// 3. Scroll Depth Tracking (50%)
-let scrollTracked = false;
-
-window.addEventListener("scroll", () => {
-  const scrollPercent =
-    (window.scrollY / (document.body.scrollHeight - window.innerHeight)) * 100;
-
-  if (!scrollTracked && scrollPercent > 50) {
-    scrollTracked = true;
-
-    gtag('event', 'scroll_50_percent', {
-      event_category: 'engagement',
-      event_label: 'half_page'
+  // Resume click
+  const resumeBtn = document.getElementById("resume-btn");
+  if (resumeBtn) {
+    resumeBtn.addEventListener("click", () => {
+      gtag('event', 'resume_click');
     });
   }
-});
 
-// 4. Time on Page (10 seconds)
-setTimeout(() => {
-  gtag('event', 'time_on_page_10s', {
-    event_category: 'engagement',
-    event_label: '10_seconds'
-  });
-}, 10000);
-
-// 5. Contact Click Tracking (if exists)
-const contactBtn = document.getElementById("contact-btn");
-if (contactBtn) {
-  contactBtn.addEventListener("click", () => {
-    gtag('event', 'contact_click', {
-      event_category: 'engagement',
-      event_label: 'contact'
+  // Project clicks
+  const projects = document.querySelectorAll(".project");
+  projects.forEach(p => {
+    p.addEventListener("click", () => {
+      gtag('event', 'project_click', {
+        name: p.querySelector("h3")?.innerText || "unknown"
+      });
     });
   });
-}
 
+  // Contact click
+  const contactBtn = document.getElementById("contact-btn");
+  if (contactBtn) {
+    contactBtn.addEventListener("click", () => {
+      gtag('event', 'contact_click');
+    });
+  }
+
+  // Scroll tracking
+  let sent = false;
+  window.addEventListener("scroll", () => {
+    let percent = (window.scrollY / (document.body.scrollHeight - window.innerHeight)) * 100;
+
+    if (!sent && percent > 50) {
+      sent = true;
+      gtag('event', 'scroll_50');
+    }
+  });
+
+});
 
 
 
