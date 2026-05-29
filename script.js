@@ -9,6 +9,12 @@ const STATE = {
   reduced: window.matchMedia('(prefers-reduced-motion: reduce)').matches
 };
 
+const trackEvent = (name, params = {}) => {
+  if (typeof gtag === 'function') {
+    gtag('event', name, params);
+  }
+};
+
 // ============================================================
 // BACKGROUND PARTICLE SYSTEM
 // ============================================================
@@ -17,7 +23,7 @@ class ParticleSystem {
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d');
     this.particles = [];
-    this.accentColor = { r: 255, g: 23, b: 68 }; // default red
+    this.accentColor = { r: 255, g: 23, b: 68 };
     this.resize();
     this.init();
     window.addEventListener('resize', () => this.resize());
@@ -42,7 +48,6 @@ class ParticleSystem {
   }
 
   setAccent(r, g, b) {
-    // smooth transition
     this.targetAccent = { r, g, b };
     if (!this._accentInterval) {
       this._accentInterval = setInterval(() => {
@@ -57,12 +62,15 @@ class ParticleSystem {
   update() {
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
     const { r, g, b } = this.accentColor;
+
     this.particles.forEach((p, idx) => {
       p.x += p.vx;
       p.y += p.vy;
       p.life -= 1;
+
       if (p.x < 0 || p.x > this.canvas.width) p.vx *= -1;
       if (p.y < 0 || p.y > this.canvas.height) p.vy *= -1;
+
       if (p.life <= 0) {
         this.particles[idx] = {
           x: Math.random() * this.canvas.width,
@@ -73,6 +81,7 @@ class ParticleSystem {
           life: Math.random() * 200 + 100
         };
       }
+
       const alpha = (p.life / 300) * 0.3;
       this.ctx.fillStyle = `rgba(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)}, ${alpha})`;
       this.ctx.fillRect(p.x, p.y, p.size, p.size);
@@ -86,11 +95,11 @@ class ParticleSystem {
 }
 
 // ============================================================
-// SAND PHOTO EFFECT — fixed: DPR-aware, proper sizing, CORS
+// SAND PHOTO EFFECT - keeps real photo visible and crisp
 // ============================================================
 class SandPhoto {
   constructor() {
-    this.wrapper = document.querySelector('.hero-image-wrapper');
+    this.wrapper = document.querySelector('.hero-image');
     this.img = document.querySelector('.hero-img');
     if (!this.wrapper || !this.img) return;
 
@@ -98,10 +107,9 @@ class SandPhoto {
     this.ctx = this.canvas.getContext('2d');
     this.canvas.style.cssText = `
       position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-      border-radius: 20px; pointer-events: none; z-index: 10; opacity: 0;
-      transition: opacity 0.3s ease;
+      pointer-events: none; z-index: 3; opacity: 0;
+      transition: opacity 0.22s ease;
     `;
-    this.wrapper.style.position = 'relative';
     this.wrapper.appendChild(this.canvas);
 
     this.particles = [];
@@ -109,53 +117,72 @@ class SandPhoto {
     this.active = false;
     this.animFrame = null;
     this.imageLoaded = false;
-    this.dpr = Math.min(window.devicePixelRatio || 1, 2); // cap at 2x
+    this.dpr = Math.min(window.devicePixelRatio || 1, 2);
+    this.resizeTimer = null;
 
-    // defer setup until after first paint so layout is stable
     const doSetup = () => {
-      // set crossOrigin before src to avoid CORS taint
-      this.img.crossOrigin = 'anonymous';
-      // force re-fetch with cors header if already loaded
-      const src = this.img.src;
       if (this.img.complete && this.img.naturalWidth > 0) {
         this.setup();
       } else {
-        this.img.src = src;
         this.img.addEventListener('load', () => this.setup(), { once: true });
       }
     };
 
-    // wait for layout to settle
     if (document.readyState === 'complete') {
       requestAnimationFrame(() => requestAnimationFrame(doSetup));
     } else {
       window.addEventListener('load', () => requestAnimationFrame(() => requestAnimationFrame(doSetup)));
     }
 
+    window.addEventListener('resize', () => {
+      clearTimeout(this.resizeTimer);
+      this.resizeTimer = setTimeout(() => this.setup(), 160);
+    });
+
+    this.wrapper.addEventListener('pointerenter', () => this.activate());
     this.wrapper.addEventListener('mouseenter', () => this.activate());
     this.wrapper.addEventListener('mouseleave', () => this.deactivate());
-    this.wrapper.addEventListener('mousemove', (e) => {
+
+    document.addEventListener('mousemove', (e) => {
+      const frameRect = this.wrapper.getBoundingClientRect();
+      const isInside = (
+        e.clientX >= frameRect.left &&
+        e.clientX <= frameRect.right &&
+        e.clientY >= frameRect.top &&
+        e.clientY <= frameRect.bottom
+      );
+
+      if (!isInside) {
+        if (this.active) this.deactivate();
+        return;
+      }
+
+      this.activate();
+
       const rect = this.canvas.getBoundingClientRect();
-      // account for dpr scaling
       this.mouse.x = (e.clientX - rect.left) * (this.canvas.width / rect.width);
       this.mouse.y = (e.clientY - rect.top) * (this.canvas.height / rect.height);
+
+      const nx = (e.clientX - rect.left) / rect.width - 0.5;
+      const ny = (e.clientY - rect.top) / rect.height - 0.5;
+      this.wrapper.style.setProperty('--photo-x', `${(nx + 0.5) * 100}%`);
+      this.wrapper.style.setProperty('--photo-y', `${(ny + 0.5) * 100}%`);
+      this.wrapper.style.setProperty('--photo-tilt-x', `${(-ny * 8).toFixed(2)}deg`);
+      this.wrapper.style.setProperty('--photo-tilt-y', `${(nx * 10).toFixed(2)}deg`);
     });
   }
 
   setup() {
     const sampleCanvas = document.createElement('canvas');
     const sampleCtx = sampleCanvas.getContext('2d');
-    const gap = 3; // tighter = more particles = better quality
+    const gap = 4;
 
     const imgRect = this.img.getBoundingClientRect();
-    // use actual pixel dimensions, not layout dimensions
     const displayW = Math.floor(imgRect.width);
     const displayH = Math.floor(imgRect.height);
 
     if (!displayW || !displayH) return;
 
-    // logical canvas size = display size (CSS handles scaling)
-    // but internally we work at DPR resolution for crispness
     const w = displayW * this.dpr;
     const h = displayH * this.dpr;
 
@@ -163,7 +190,6 @@ class SandPhoto {
     sampleCanvas.height = h;
     this.canvas.width = w;
     this.canvas.height = h;
-    // canvas CSS size stays at display resolution, browser scales
     this.canvas.style.width = displayW + 'px';
     this.canvas.style.height = displayH + 'px';
 
@@ -173,20 +199,33 @@ class SandPhoto {
 
       this.particles = [];
       const gapScaled = gap * this.dpr;
+
       for (let y = 0; y < h; y += gapScaled) {
         for (let x = 0; x < w; x += gapScaled) {
           const i = (y * w + x) * 4;
-          const r = data[i], g = data[i + 1], b = data[i + 2], a = data[i + 3];
+          const r = data[i];
+          const g = data[i + 1];
+          const b = data[i + 2];
+          const a = data[i + 3];
+
           if (a < 30) continue;
+
           this.particles.push({
-            ox: x, oy: y,
-            x, y,
-            vx: 0, vy: 0,
-            r, g, b,
-            size: gapScaled * 0.92
+            ox: x,
+            oy: y,
+            x,
+            y,
+            vx: 0,
+            vy: 0,
+            r,
+            g,
+            b,
+            size: gapScaled * 0.96,
+            alpha: 0
           });
         }
       }
+
       this.imageLoaded = true;
     } catch (e) {
       console.warn('SandPhoto: CORS blocked. Serve image from same origin or add crossorigin headers.', e);
@@ -195,40 +234,56 @@ class SandPhoto {
 
   activate() {
     if (!this.imageLoaded) return;
+    if (this.active) return;
+
     this.active = true;
+    this.wrapper.classList.add('is-reacting');
     this.canvas.style.opacity = '1';
-    this.img.style.opacity = '0';
     this.loop();
   }
 
   deactivate() {
     this.active = false;
+    this.wrapper.classList.remove('is-reacting');
     this.canvas.style.opacity = '0';
-    this.img.style.opacity = '1';
+    this.wrapper.style.setProperty('--photo-tilt-x', '0deg');
+    this.wrapper.style.setProperty('--photo-tilt-y', '0deg');
+
     if (this.animFrame) cancelAnimationFrame(this.animFrame);
-    this.particles.forEach(p => { p.x = p.ox; p.y = p.oy; p.vx = 0; p.vy = 0; });
+
+    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    this.particles.forEach(p => {
+      p.x = p.ox;
+      p.y = p.oy;
+      p.vx = 0;
+      p.vy = 0;
+      p.alpha = 0;
+    });
   }
 
   loop() {
     if (!this.active) return;
+
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
-    const REPEL = 90 * this.dpr;
-    const REPEL_STRENGTH = 7;
-    const RETURN = 0.08;
-    const FRICTION = 0.82;
+    const REPEL = 78 * this.dpr;
+    const REPEL_STRENGTH = 5.2;
+    const RETURN = 0.1;
+    const FRICTION = 0.84;
 
     this.particles.forEach(p => {
       const dx = p.x - this.mouse.x;
       const dy = p.y - this.mouse.y;
       const dist = Math.sqrt(dx * dx + dy * dy);
+      const influence = Math.max(0, 1 - dist / REPEL);
 
       if (dist < REPEL && dist > 0) {
-        const force = (REPEL - dist) / REPEL * REPEL_STRENGTH;
+        const force = influence * REPEL_STRENGTH;
         p.vx += (dx / dist) * force;
         p.vy += (dy / dist) * force;
-        p.vx += (Math.random() - 0.5) * 1.5;
-        p.vy += (Math.random() - 0.5) * 1.5;
+        p.vx += (Math.random() - 0.5) * 0.9;
+        p.vy += (Math.random() - 0.5) * 0.9;
+        p.alpha = Math.min(0.88, p.alpha + influence * 0.22);
       }
 
       p.vx += (p.ox - p.x) * RETURN;
@@ -237,11 +292,18 @@ class SandPhoto {
       p.vy *= FRICTION;
       p.x += p.vx;
       p.y += p.vy;
+      p.alpha *= 0.91;
+
+      const drift = Math.hypot(p.x - p.ox, p.y - p.oy);
+      const visible = Math.max(p.alpha, Math.min(0.42, drift / (32 * this.dpr)));
+      if (visible < 0.025) return;
 
       const speed = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
-      const brightness = Math.min(1.4, 1 + speed * 0.05);
-      this.ctx.fillStyle = `rgba(${Math.min(255, p.r * brightness)}, ${Math.min(255, p.g * brightness)}, ${Math.min(255, p.b * brightness)}, 0.95)`;
-      this.ctx.fillRect(p.x, p.y, p.size, p.size);
+      const brightness = Math.min(1.28, 1 + speed * 0.035);
+      const alpha = Math.min(0.78, visible + speed * 0.01);
+
+      this.ctx.fillStyle = `rgba(${Math.min(255, p.r * brightness)}, ${Math.min(255, p.g * brightness)}, ${Math.min(255, p.b * brightness)}, ${alpha})`;
+      this.ctx.fillRect(p.x - p.size / 2, p.y - p.size / 2, p.size, p.size);
     });
 
     this.animFrame = requestAnimationFrame(() => this.loop());
@@ -286,6 +348,7 @@ class MagneticCursor {
 
   bindMagnetic() {
     const targets = document.querySelectorAll('.btn, .btn-resume, .project-links a, .cp-link, .contact-link, .skill-tag, .nav-links a');
+
     targets.forEach(el => {
       el.addEventListener('mouseenter', () => {
         this.ring.style.width = '60px';
@@ -293,6 +356,7 @@ class MagneticCursor {
         this.ring.style.borderColor = 'rgba(255,23,68,0.9)';
         this.ring.style.background = 'rgba(255,23,68,0.05)';
       });
+
       el.addEventListener('mouseleave', () => {
         this.ring.style.width = '40px';
         this.ring.style.height = '40px';
@@ -305,6 +369,7 @@ class MagneticCursor {
       el.addEventListener('mouseenter', () => {
         if (this.dot) this.dot.style.transform = 'translate(-50%, -50%) scale(1.8)';
       });
+
       el.addEventListener('mouseleave', () => {
         if (this.dot) this.dot.style.transform = 'translate(-50%, -50%) scale(1)';
       });
@@ -319,6 +384,7 @@ class MagneticCursor {
       this.dot.style.left = this.x + 'px';
       this.dot.style.top = this.y + 'px';
     }
+
     this.ring.style.left = this.dotX + 'px';
     this.ring.style.top = this.dotY + 'px';
 
@@ -336,16 +402,12 @@ class GlitchText {
 
   init() {
     const titles = document.querySelectorAll('.section-title, .hero-title');
+
     titles.forEach(title => {
       title.setAttribute('data-text', title.textContent);
       title.style.position = 'relative';
       title.addEventListener('mouseenter', () => this.glitch(title));
     });
-
-    const heroTitle = document.querySelector('.hero-title');
-    if (heroTitle) {
-      setTimeout(() => this.glitch(heroTitle), 1200);
-    }
   }
 
   glitch(el) {
@@ -367,6 +429,7 @@ class GlitchText {
         .join('');
 
       iterations += 2;
+
       if (iterations >= original.length + 4) {
         el.textContent = original;
         clearInterval(interval);
@@ -386,6 +449,7 @@ class RGBCardShift {
 
   init() {
     const cards = document.querySelectorAll('.project-card');
+
     cards.forEach(card => {
       card.addEventListener('mousemove', (e) => {
         const rect = card.getBoundingClientRect();
@@ -427,6 +491,7 @@ class SkillScatter {
 
   init() {
     const groups = document.querySelectorAll('.skill-group');
+
     groups.forEach(group => {
       const tags = group.querySelectorAll('.skill-tag');
 
@@ -457,6 +522,7 @@ class TypingEffect {
   constructor() {
     this.el = document.querySelector('.hero-tagline');
     if (!this.el) return;
+
     this.text = this.el.textContent;
     this.el.textContent = '';
     this.el.style.borderRight = '2px solid var(--accent)';
@@ -466,15 +532,19 @@ class TypingEffect {
 
   type() {
     let i = 0;
+
     const interval = setInterval(() => {
       this.el.textContent += this.text[i];
       i++;
+
       if (i >= this.text.length) {
         clearInterval(interval);
+
         let blinks = 0;
         const blink = setInterval(() => {
           this.el.style.borderRight = blinks % 2 === 0 ? '2px solid transparent' : '2px solid var(--accent)';
           blinks++;
+
           if (blinks > 6) {
             clearInterval(blink);
             this.el.style.borderRight = 'none';
@@ -503,6 +573,7 @@ class StatCounter {
         }
       });
     }, { threshold: 0.5 });
+
     this.stats.forEach(stat => observer.observe(stat));
   }
 
@@ -519,6 +590,7 @@ class StatCounter {
       const progress = 1 - Math.pow(1 - step / steps, 2);
       const current = Math.floor(target * progress);
       element.textContent = current.toString() + (isPlus ? '+' : '');
+
       if (step >= steps) {
         element.textContent = target.toString() + (isPlus ? '+' : '');
         clearInterval(interval);
@@ -559,6 +631,7 @@ class NavManager {
     this.links.forEach(link => {
       link.addEventListener('click', (e) => {
         const target = link.getAttribute('href');
+
         if (target.startsWith('#')) {
           e.preventDefault();
           document.querySelector(target)?.scrollIntoView({ behavior: 'smooth' });
@@ -577,10 +650,13 @@ class NavManager {
   updateActive() {
     this.links.forEach(link => {
       link.classList.remove('active');
+
       const target = link.getAttribute('href');
       if (!target.startsWith('#')) return;
+
       const section = document.querySelector(target);
       if (!section) return;
+
       const rect = section.getBoundingClientRect();
       if (rect.top <= 100 && rect.bottom > 100) {
         link.classList.add('active');
@@ -638,6 +714,7 @@ class ThemeManager {
     } else {
       this.html.setAttribute('data-theme', theme);
     }
+
     STATE.theme = theme;
     localStorage.setItem('theme', theme);
   }
@@ -654,6 +731,7 @@ class ThemeManager {
 class AchievementAnimate {
   constructor() {
     const items = document.querySelectorAll('.achievement-item');
+
     const observer = new IntersectionObserver((entries) => {
       entries.forEach((entry, idx) => {
         if (entry.isIntersecting) {
@@ -674,8 +752,7 @@ class AchievementAnimate {
 }
 
 // ============================================================
-// GHOST TRAIL — replaces sparkle trail. hollow rings, not dots.
-// more unsettling, less party.
+// GHOST TRAIL
 // ============================================================
 class GhostTrail {
   constructor() {
@@ -688,7 +765,6 @@ class GhostTrail {
       const dy = e.clientY - this.lastY;
       const dist = Math.sqrt(dx * dx + dy * dy);
 
-      // only spawn if cursor moved enough (avoid spam when idle)
       if (dist < 8) return;
       if (Math.random() > 0.5) return;
 
@@ -703,6 +779,7 @@ class GhostTrail {
   spawn(x, y) {
     const size = Math.random() * 10 + 4;
     const ghost = document.createElement('div');
+
     ghost.style.cssText = `
       position: fixed; pointer-events: none; z-index: 9996;
       width: ${size}px; height: ${size}px;
@@ -711,6 +788,7 @@ class GhostTrail {
       left: ${x}px; top: ${y}px;
       transform: translate(-50%, -50%);
     `;
+
     document.body.appendChild(ghost);
     this.ghosts.push({ el: ghost, x, y, life: 1, size });
   }
@@ -721,32 +799,35 @@ class GhostTrail {
       const scale = 1 + (1 - g.life) * 1.2;
       g.el.style.opacity = g.life * 0.6;
       g.el.style.transform = `translate(-50%, -50%) scale(${scale})`;
+
       if (g.life <= 0) {
         g.el.remove();
         return false;
       }
+
       return true;
     });
+
     requestAnimationFrame(() => this.loop());
   }
 }
 
 // ============================================================
-// SECTION AMBIENCE — bg particle color shifts per section
-// subtle, not dramatic. just changes the vibe.
+// SECTION AMBIENCE
 // ============================================================
 class SectionAmbience {
   constructor(particleSystem) {
     this.ps = particleSystem;
-    // section id -> [r, g, b]
     this.palette = {
-      'hero':         [255, 23,  68],   // red (default)
-      'about':        [180, 60,  255],  // purple
-      'projects':     [0,   200, 255],  // cyan
-      'skills':       [255, 160, 20],   // amber
-      'cp':           [50,  220, 120],  // green
-      'achievements': [255, 23,  68],   // back to red
-      'contact':      [255, 23,  68],
+      hero: [255, 23, 68],
+      about: [180, 60, 255],
+      projects: [0, 200, 255],
+      'other-projects': [0, 200, 255],
+      skills: [255, 160, 20],
+      cp: [50, 220, 120],
+      'open-source': [180, 60, 255],
+      achievements: [255, 23, 68],
+      contact: [255, 23, 68]
     };
 
     this.init();
@@ -754,6 +835,7 @@ class SectionAmbience {
 
   init() {
     const sections = document.querySelectorAll('section[id]');
+
     const observer = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
         if (entry.isIntersecting) {
@@ -769,8 +851,7 @@ class SectionAmbience {
 }
 
 // ============================================================
-// RAGE MODE — hold click for 2s. screen shakes, goes red.
-// not a meltdown, just a dramatic exit from calm.
+// RAGE MODE
 // ============================================================
 class RageMode {
   constructor() {
@@ -782,11 +863,13 @@ class RageMode {
 
   createOverlay() {
     const el = document.createElement('div');
+
     el.style.cssText = `
       position: fixed; inset: 0; pointer-events: none; z-index: 9990;
       background: rgba(255,23,68,0); transition: background 0.3s ease;
       mix-blend-mode: multiply;
     `;
+
     document.body.appendChild(el);
     return el;
   }
@@ -794,11 +877,13 @@ class RageMode {
   shake() {
     const intensity = 6;
     document.body.style.transition = 'transform 0.05s ease';
+
     const id = setInterval(() => {
       const x = (Math.random() - 0.5) * intensity;
       const y = (Math.random() - 0.5) * intensity;
       document.body.style.transform = `translate(${x}px, ${y}px)`;
     }, 50);
+
     return id;
   }
 
@@ -815,6 +900,7 @@ class RageMode {
 
     document.addEventListener('mouseup', () => {
       clearTimeout(this.timer);
+
       if (this.active) {
         this.active = false;
         this.overlay.style.background = 'rgba(255,23,68,0)';
@@ -826,12 +912,11 @@ class RageMode {
 }
 
 // ============================================================
-// EASTER EGG — konami code: up up down down left right left right B A
-// triggers a full-screen wednesday moment
+// EASTER EGG
 // ============================================================
 class EasterEgg {
   constructor() {
-    this.code = ['ArrowUp','ArrowUp','ArrowDown','ArrowDown','ArrowLeft','ArrowRight','ArrowLeft','ArrowRight','b','a'];
+    this.code = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'b', 'a'];
     this.pos = 0;
     this.modal = this.createModal();
     this.init();
@@ -839,15 +924,17 @@ class EasterEgg {
 
   createModal() {
     const el = document.createElement('div');
+
     el.style.cssText = `
       position: fixed; inset: 0; z-index: 99999;
       background: #000; display: none; align-items: center; justify-content: center;
       flex-direction: column; cursor: pointer;
       font-family: 'Courier New', monospace;
     `;
+
     el.innerHTML = `
       <div style="text-align:center; padding: 40px; max-width: 600px;">
-        <div style="font-size: clamp(60px,12vw,120px); margin-bottom: 20px; filter: drop-shadow(0 0 20px #ff1744);">🖤</div>
+        <div style="font-size: clamp(60px,12vw,120px); margin-bottom: 20px; filter: drop-shadow(0 0 20px #ff1744);">&#10084;</div>
         <h2 style="color:#ff1744; font-size:clamp(18px,4vw,28px); letter-spacing:4px; text-transform:uppercase; margin:0 0 20px;">
           you found it
         </h2>
@@ -860,9 +947,11 @@ class EasterEgg {
         </p>
       </div>
     `;
+
     el.addEventListener('click', () => {
       el.style.display = 'none';
     });
+
     document.body.appendChild(el);
     return el;
   }
@@ -871,6 +960,7 @@ class EasterEgg {
     document.addEventListener('keydown', (e) => {
       if (e.key === this.code[this.pos]) {
         this.pos++;
+
         if (this.pos === this.code.length) {
           this.pos = 0;
           this.trigger();
@@ -883,9 +973,10 @@ class EasterEgg {
 
   trigger() {
     this.modal.style.display = 'flex';
-    // brief screen flash
     this.modal.style.background = '#ff1744';
-    setTimeout(() => { this.modal.style.background = '#000'; }, 80);
+    setTimeout(() => {
+      this.modal.style.background = '#000';
+    }, 80);
   }
 }
 
@@ -925,6 +1016,33 @@ class SmoothScroll {
 }
 
 // ============================================================
+// REACTIVE SPOTLIGHT
+// ============================================================
+class ReactiveSpotlight {
+  constructor() {
+    this.targets = document.querySelectorAll('.project-card, .cp-card, .stat-box');
+    this.init();
+  }
+
+  init() {
+    document.addEventListener('mousemove', (e) => {
+      document.body.style.setProperty('--cursor-x', `${e.clientX}px`);
+      document.body.style.setProperty('--cursor-y', `${e.clientY}px`);
+    });
+
+    this.targets.forEach(target => {
+      target.addEventListener('mousemove', (e) => {
+        const rect = target.getBoundingClientRect();
+        const x = ((e.clientX - rect.left) / rect.width) * 100;
+        const y = ((e.clientY - rect.top) / rect.height) * 100;
+        target.style.setProperty('--card-x', `${x}%`);
+        target.style.setProperty('--card-y', `${y}%`);
+      });
+    });
+  }
+}
+
+// ============================================================
 // PERFORMANCE MONITOR
 // ============================================================
 class PerformanceMonitor {
@@ -955,7 +1073,8 @@ document.addEventListener('DOMContentLoaded', () => {
   new KeyboardShortcuts();
   new SmoothScroll();
   new AchievementAnimate();
-  new EasterEgg(); // always on, it's keyboard-only
+  new EasterEgg();
+  new ReactiveSpotlight();
 
   if (!STATE.reduced) {
     new SandPhoto();
@@ -964,9 +1083,9 @@ document.addEventListener('DOMContentLoaded', () => {
     new RGBCardShift();
     new SkillScatter();
     new TypingEffect();
-    new GhostTrail();           // replaces SparkleTrail
-    new RageMode();             // hold click 2s
-    new SectionAmbience(particles); // bg color shifts per section
+    new GhostTrail();
+    new RageMode();
+    new SectionAmbience(particles);
   }
 
   if (STATE.reduced) {
@@ -981,34 +1100,46 @@ document.addEventListener('DOMContentLoaded', () => {
 // ============================================================
 // ANALYTICS
 // ============================================================
-document.addEventListener("DOMContentLoaded", () => {
-  const resumeBtn = document.getElementById("resume-btn");
+document.addEventListener('DOMContentLoaded', () => {
+  const resumeBtn = document.getElementById('resume-btn');
+
   if (resumeBtn) {
-    resumeBtn.addEventListener("click", (e) => {
+    resumeBtn.addEventListener('click', (e) => {
       e.preventDefault();
-      gtag('event', 'resume_click');
-      setTimeout(() => { window.location.href = resumeBtn.href; }, 300);
+      trackEvent('resume_click');
+      setTimeout(() => {
+        window.location.href = resumeBtn.href;
+      }, 300);
     });
   }
 
-  const projects = document.querySelectorAll(".project");
+  const projects = document.querySelectorAll('.project');
+
   projects.forEach(p => {
-    p.addEventListener("click", () => {
-      gtag('event', 'project_click', { name: p.querySelector("h3")?.innerText || "unknown" });
+    p.addEventListener('click', () => {
+      trackEvent('project_click', {
+        name: p.querySelector('h3')?.innerText || 'unknown'
+      });
     });
   });
 
-  const contactBtn = document.getElementById("contact-btn");
+  const contactBtn = document.getElementById('contact-btn');
+
   if (contactBtn) {
-    contactBtn.addEventListener("click", () => { gtag('event', 'contact_click'); });
+    contactBtn.addEventListener('click', () => {
+      trackEvent('contact_click');
+    });
   }
 
   let sent = false;
-  window.addEventListener("scroll", () => {
-    const percent = (window.scrollY / (document.body.scrollHeight - window.innerHeight)) * 100;
+
+  window.addEventListener('scroll', () => {
+    const total = document.body.scrollHeight - window.innerHeight;
+    const percent = total > 0 ? (window.scrollY / total) * 100 : 0;
+
     if (!sent && percent > 50) {
       sent = true;
-      gtag('event', 'scroll_50');
+      trackEvent('scroll_50');
     }
   });
 });
