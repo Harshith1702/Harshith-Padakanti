@@ -10,13 +10,14 @@ const STATE = {
 };
 
 // ============================================================
-// BACKGROUND PARTICLE SYSTEM (existing, kept)
+// BACKGROUND PARTICLE SYSTEM
 // ============================================================
 class ParticleSystem {
   constructor(canvas) {
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d');
     this.particles = [];
+    this.accentColor = { r: 255, g: 23, b: 68 }; // default red
     this.resize();
     this.init();
     window.addEventListener('resize', () => this.resize());
@@ -40,8 +41,22 @@ class ParticleSystem {
     }
   }
 
+  setAccent(r, g, b) {
+    // smooth transition
+    this.targetAccent = { r, g, b };
+    if (!this._accentInterval) {
+      this._accentInterval = setInterval(() => {
+        const lerp = (a, b) => a + (b - a) * 0.05;
+        this.accentColor.r = lerp(this.accentColor.r, this.targetAccent.r);
+        this.accentColor.g = lerp(this.accentColor.g, this.targetAccent.g);
+        this.accentColor.b = lerp(this.accentColor.b, this.targetAccent.b);
+      }, 16);
+    }
+  }
+
   update() {
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    const { r, g, b } = this.accentColor;
     this.particles.forEach((p, idx) => {
       p.x += p.vx;
       p.y += p.vy;
@@ -59,7 +74,7 @@ class ParticleSystem {
         };
       }
       const alpha = (p.life / 300) * 0.3;
-      this.ctx.fillStyle = `rgba(255, 23, 68, ${alpha})`;
+      this.ctx.fillStyle = `rgba(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)}, ${alpha})`;
       this.ctx.fillRect(p.x, p.y, p.size, p.size);
     });
   }
@@ -71,7 +86,7 @@ class ParticleSystem {
 }
 
 // ============================================================
-// SAND PHOTO EFFECT — hero image dissolves to particles on hover
+// SAND PHOTO EFFECT — fixed: DPR-aware, proper sizing, CORS
 // ============================================================
 class SandPhoto {
   constructor() {
@@ -94,61 +109,87 @@ class SandPhoto {
     this.active = false;
     this.animFrame = null;
     this.imageLoaded = false;
+    this.dpr = Math.min(window.devicePixelRatio || 1, 2); // cap at 2x
 
-    // Wait for image to be available
-    if (this.img.complete && this.img.naturalWidth > 0) {
-      this.setup();
+    // defer setup until after first paint so layout is stable
+    const doSetup = () => {
+      // set crossOrigin before src to avoid CORS taint
+      this.img.crossOrigin = 'anonymous';
+      // force re-fetch with cors header if already loaded
+      const src = this.img.src;
+      if (this.img.complete && this.img.naturalWidth > 0) {
+        this.setup();
+      } else {
+        this.img.src = src;
+        this.img.addEventListener('load', () => this.setup(), { once: true });
+      }
+    };
+
+    // wait for layout to settle
+    if (document.readyState === 'complete') {
+      requestAnimationFrame(() => requestAnimationFrame(doSetup));
     } else {
-      this.img.addEventListener('load', () => this.setup());
+      window.addEventListener('load', () => requestAnimationFrame(() => requestAnimationFrame(doSetup)));
     }
 
     this.wrapper.addEventListener('mouseenter', () => this.activate());
     this.wrapper.addEventListener('mouseleave', () => this.deactivate());
     this.wrapper.addEventListener('mousemove', (e) => {
       const rect = this.canvas.getBoundingClientRect();
+      // account for dpr scaling
       this.mouse.x = (e.clientX - rect.left) * (this.canvas.width / rect.width);
       this.mouse.y = (e.clientY - rect.top) * (this.canvas.height / rect.height);
     });
   }
 
   setup() {
-    // Sample image pixels at low resolution for performance
     const sampleCanvas = document.createElement('canvas');
     const sampleCtx = sampleCanvas.getContext('2d');
-    const gap = 4; // pixel spacing between particles
+    const gap = 3; // tighter = more particles = better quality
 
     const imgRect = this.img.getBoundingClientRect();
-    const w = Math.floor(imgRect.width || 400);
-    const h = Math.floor(imgRect.height || 500);
+    // use actual pixel dimensions, not layout dimensions
+    const displayW = Math.floor(imgRect.width);
+    const displayH = Math.floor(imgRect.height);
+
+    if (!displayW || !displayH) return;
+
+    // logical canvas size = display size (CSS handles scaling)
+    // but internally we work at DPR resolution for crispness
+    const w = displayW * this.dpr;
+    const h = displayH * this.dpr;
 
     sampleCanvas.width = w;
     sampleCanvas.height = h;
     this.canvas.width = w;
     this.canvas.height = h;
+    // canvas CSS size stays at display resolution, browser scales
+    this.canvas.style.width = displayW + 'px';
+    this.canvas.style.height = displayH + 'px';
 
     try {
       sampleCtx.drawImage(this.img, 0, 0, w, h);
       const data = sampleCtx.getImageData(0, 0, w, h).data;
 
       this.particles = [];
-      for (let y = 0; y < h; y += gap) {
-        for (let x = 0; x < w; x += gap) {
+      const gapScaled = gap * this.dpr;
+      for (let y = 0; y < h; y += gapScaled) {
+        for (let x = 0; x < w; x += gapScaled) {
           const i = (y * w + x) * 4;
           const r = data[i], g = data[i + 1], b = data[i + 2], a = data[i + 3];
           if (a < 30) continue;
           this.particles.push({
-            ox: x, oy: y,       // origin
-            x: x, y: y,         // current
+            ox: x, oy: y,
+            x, y,
             vx: 0, vy: 0,
             r, g, b,
-            size: gap * 0.9
+            size: gapScaled * 0.92
           });
         }
       }
       this.imageLoaded = true;
     } catch (e) {
-      // CORS issue with local images — skip effect gracefully
-      console.warn('SandPhoto: could not read image pixels (CORS). Effect disabled.');
+      console.warn('SandPhoto: CORS blocked. Serve image from same origin or add crossorigin headers.', e);
     }
   }
 
@@ -165,7 +206,6 @@ class SandPhoto {
     this.canvas.style.opacity = '0';
     this.img.style.opacity = '1';
     if (this.animFrame) cancelAnimationFrame(this.animFrame);
-    // snap all particles back
     this.particles.forEach(p => { p.x = p.ox; p.y = p.oy; p.vx = 0; p.vy = 0; });
   }
 
@@ -173,8 +213,8 @@ class SandPhoto {
     if (!this.active) return;
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
-    const REPEL = 80;
-    const REPEL_STRENGTH = 6;
+    const REPEL = 90 * this.dpr;
+    const REPEL_STRENGTH = 7;
     const RETURN = 0.08;
     const FRICTION = 0.82;
 
@@ -183,23 +223,18 @@ class SandPhoto {
       const dy = p.y - this.mouse.y;
       const dist = Math.sqrt(dx * dx + dy * dy);
 
-      if (dist < REPEL) {
+      if (dist < REPEL && dist > 0) {
         const force = (REPEL - dist) / REPEL * REPEL_STRENGTH;
         p.vx += (dx / dist) * force;
         p.vy += (dy / dist) * force;
-        // add a bit of random sand scatter
         p.vx += (Math.random() - 0.5) * 1.5;
         p.vy += (Math.random() - 0.5) * 1.5;
       }
 
-      // spring back to origin
       p.vx += (p.ox - p.x) * RETURN;
       p.vy += (p.oy - p.y) * RETURN;
-
-      // friction
       p.vx *= FRICTION;
       p.vy *= FRICTION;
-
       p.x += p.vx;
       p.y += p.vy;
 
@@ -214,7 +249,7 @@ class SandPhoto {
 }
 
 // ============================================================
-// MAGNETIC CURSOR — elements pull/push the cursor
+// MAGNETIC CURSOR
 // ============================================================
 class MagneticCursor {
   constructor() {
@@ -224,8 +259,6 @@ class MagneticCursor {
     this.y = window.innerHeight / 2;
     this.dotX = this.x;
     this.dotY = this.y;
-    this.scale = 1;
-    this.label = '';
 
     document.addEventListener('mousemove', (e) => {
       this.x = e.clientX;
@@ -268,7 +301,6 @@ class MagneticCursor {
       });
     });
 
-    // Cursor changes on interactive elements
     document.querySelectorAll('a, button').forEach(el => {
       el.addEventListener('mouseenter', () => {
         if (this.dot) this.dot.style.transform = 'translate(-50%, -50%) scale(1.8)';
@@ -280,7 +312,6 @@ class MagneticCursor {
   }
 
   animate() {
-    // Lag the ring behind the dot for a trail effect
     this.dotX += (this.x - this.dotX) * 0.12;
     this.dotY += (this.y - this.dotY) * 0.12;
 
@@ -296,7 +327,7 @@ class MagneticCursor {
 }
 
 // ============================================================
-// GLITCH TEXT — section titles glitch on intersection
+// GLITCH TEXT
 // ============================================================
 class GlitchText {
   constructor() {
@@ -308,11 +339,9 @@ class GlitchText {
     titles.forEach(title => {
       title.setAttribute('data-text', title.textContent);
       title.style.position = 'relative';
-
       title.addEventListener('mouseenter', () => this.glitch(title));
     });
 
-    // Auto-glitch hero title on load
     const heroTitle = document.querySelector('.hero-title');
     if (heroTitle) {
       setTimeout(() => this.glitch(heroTitle), 1200);
@@ -326,7 +355,6 @@ class GlitchText {
     const original = el.textContent;
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789@#$%^&*';
     let iterations = 0;
-    const maxIter = 12;
 
     const interval = setInterval(() => {
       el.textContent = original
@@ -349,7 +377,7 @@ class GlitchText {
 }
 
 // ============================================================
-// RGB CARD SHIFT — project cards get chromatic aberration on hover
+// RGB CARD SHIFT
 // ============================================================
 class RGBCardShift {
   constructor() {
@@ -359,8 +387,6 @@ class RGBCardShift {
   init() {
     const cards = document.querySelectorAll('.project-card');
     cards.forEach(card => {
-      let animating = false;
-
       card.addEventListener('mousemove', (e) => {
         const rect = card.getBoundingClientRect();
         const x = (e.clientX - rect.left) / rect.width - 0.5;
@@ -373,13 +399,11 @@ class RGBCardShift {
 
         card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateZ(10px)`;
 
-        // Chromatic aberration via text-shadow on heading
         const h3 = card.querySelector('h3');
         if (h3) {
           h3.style.textShadow = `${shiftX * 2}px ${shiftY}px 0 rgba(255,23,68,0.5), ${-shiftX}px ${-shiftY}px 0 rgba(0,200,255,0.3)`;
         }
 
-        // Glow follows cursor within card
         card.style.background = `radial-gradient(circle at ${(x + 0.5) * 100}% ${(y + 0.5) * 100}%, rgba(255,23,68,0.08) 0%, transparent 60%), var(--surface-dark)`;
       });
 
@@ -394,7 +418,7 @@ class RGBCardShift {
 }
 
 // ============================================================
-// SKILL TAG SCATTER — tags scatter on hover then reform
+// SKILL TAG SCATTER
 // ============================================================
 class SkillScatter {
   constructor() {
@@ -427,7 +451,7 @@ class SkillScatter {
 }
 
 // ============================================================
-// TYPING EFFECT — tagline types in on load
+// TYPING EFFECT
 // ============================================================
 class TypingEffect {
   constructor() {
@@ -442,13 +466,11 @@ class TypingEffect {
 
   type() {
     let i = 0;
-    const speed = 55;
     const interval = setInterval(() => {
       this.el.textContent += this.text[i];
       i++;
       if (i >= this.text.length) {
         clearInterval(interval);
-        // blink cursor then remove
         let blinks = 0;
         const blink = setInterval(() => {
           this.el.style.borderRight = blinks % 2 === 0 ? '2px solid transparent' : '2px solid var(--accent)';
@@ -459,12 +481,12 @@ class TypingEffect {
           }
         }, 400);
       }
-    }, speed);
+    }, 55);
   }
 }
 
 // ============================================================
-// SCROLL COUNTER STREAK — stat boxes get a live counter cascade
+// STAT COUNTER
 // ============================================================
 class StatCounter {
   constructor() {
@@ -494,7 +516,6 @@ class StatCounter {
 
     const interval = setInterval(() => {
       step++;
-      // Ease out quad
       const progress = 1 - Math.pow(1 - step / steps, 2);
       const current = Math.floor(target * progress);
       element.textContent = current.toString() + (isPlus ? '+' : '');
@@ -507,7 +528,7 @@ class StatCounter {
 }
 
 // ============================================================
-// NAVBAR MORPH — navbar compresses + gets progress bar on scroll
+// NAV MANAGER
 // ============================================================
 class NavManager {
   constructor() {
@@ -569,7 +590,7 @@ class NavManager {
 }
 
 // ============================================================
-// SCROLL OBSERVER (existing, kept)
+// SCROLL OBSERVER
 // ============================================================
 class ScrollObserver {
   constructor() {
@@ -596,7 +617,7 @@ class ScrollObserver {
 }
 
 // ============================================================
-// THEME MANAGER (existing, kept)
+// THEME MANAGER
 // ============================================================
 class ThemeManager {
   constructor() {
@@ -628,7 +649,7 @@ class ThemeManager {
 }
 
 // ============================================================
-// ACHIEVEMENT ITEMS — staggered slide-in from left
+// ACHIEVEMENT ANIMATE
 // ============================================================
 class AchievementAnimate {
   constructor() {
@@ -653,7 +674,223 @@ class AchievementAnimate {
 }
 
 // ============================================================
-// EXTERNAL LINKS + KEYBOARD SHORTCUTS (existing, kept)
+// GHOST TRAIL — replaces sparkle trail. hollow rings, not dots.
+// more unsettling, less party.
+// ============================================================
+class GhostTrail {
+  constructor() {
+    this.ghosts = [];
+    this.lastX = 0;
+    this.lastY = 0;
+
+    document.addEventListener('mousemove', (e) => {
+      const dx = e.clientX - this.lastX;
+      const dy = e.clientY - this.lastY;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+
+      // only spawn if cursor moved enough (avoid spam when idle)
+      if (dist < 8) return;
+      if (Math.random() > 0.5) return;
+
+      this.lastX = e.clientX;
+      this.lastY = e.clientY;
+      this.spawn(e.clientX, e.clientY);
+    });
+
+    this.loop();
+  }
+
+  spawn(x, y) {
+    const size = Math.random() * 10 + 4;
+    const ghost = document.createElement('div');
+    ghost.style.cssText = `
+      position: fixed; pointer-events: none; z-index: 9996;
+      width: ${size}px; height: ${size}px;
+      border-radius: 50%;
+      border: 1px solid rgba(255,23,68,0.7);
+      left: ${x}px; top: ${y}px;
+      transform: translate(-50%, -50%);
+    `;
+    document.body.appendChild(ghost);
+    this.ghosts.push({ el: ghost, x, y, life: 1, size });
+  }
+
+  loop() {
+    this.ghosts = this.ghosts.filter(g => {
+      g.life -= 0.05;
+      const scale = 1 + (1 - g.life) * 1.2;
+      g.el.style.opacity = g.life * 0.6;
+      g.el.style.transform = `translate(-50%, -50%) scale(${scale})`;
+      if (g.life <= 0) {
+        g.el.remove();
+        return false;
+      }
+      return true;
+    });
+    requestAnimationFrame(() => this.loop());
+  }
+}
+
+// ============================================================
+// SECTION AMBIENCE — bg particle color shifts per section
+// subtle, not dramatic. just changes the vibe.
+// ============================================================
+class SectionAmbience {
+  constructor(particleSystem) {
+    this.ps = particleSystem;
+    // section id -> [r, g, b]
+    this.palette = {
+      'hero':         [255, 23,  68],   // red (default)
+      'about':        [180, 60,  255],  // purple
+      'projects':     [0,   200, 255],  // cyan
+      'skills':       [255, 160, 20],   // amber
+      'cp':           [50,  220, 120],  // green
+      'achievements': [255, 23,  68],   // back to red
+      'contact':      [255, 23,  68],
+    };
+
+    this.init();
+  }
+
+  init() {
+    const sections = document.querySelectorAll('section[id]');
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const id = entry.target.id;
+          const color = this.palette[id];
+          if (color) this.ps.setAccent(...color);
+        }
+      });
+    }, { threshold: 0.4 });
+
+    sections.forEach(s => observer.observe(s));
+  }
+}
+
+// ============================================================
+// RAGE MODE — hold click for 2s. screen shakes, goes red.
+// not a meltdown, just a dramatic exit from calm.
+// ============================================================
+class RageMode {
+  constructor() {
+    this.timer = null;
+    this.active = false;
+    this.overlay = this.createOverlay();
+    this.init();
+  }
+
+  createOverlay() {
+    const el = document.createElement('div');
+    el.style.cssText = `
+      position: fixed; inset: 0; pointer-events: none; z-index: 9990;
+      background: rgba(255,23,68,0); transition: background 0.3s ease;
+      mix-blend-mode: multiply;
+    `;
+    document.body.appendChild(el);
+    return el;
+  }
+
+  shake() {
+    const intensity = 6;
+    document.body.style.transition = 'transform 0.05s ease';
+    const id = setInterval(() => {
+      const x = (Math.random() - 0.5) * intensity;
+      const y = (Math.random() - 0.5) * intensity;
+      document.body.style.transform = `translate(${x}px, ${y}px)`;
+    }, 50);
+    return id;
+  }
+
+  init() {
+    let shakeId = null;
+
+    document.addEventListener('mousedown', () => {
+      this.timer = setTimeout(() => {
+        this.active = true;
+        this.overlay.style.background = 'rgba(255,23,68,0.12)';
+        shakeId = this.shake();
+      }, 2000);
+    });
+
+    document.addEventListener('mouseup', () => {
+      clearTimeout(this.timer);
+      if (this.active) {
+        this.active = false;
+        this.overlay.style.background = 'rgba(255,23,68,0)';
+        if (shakeId) clearInterval(shakeId);
+        document.body.style.transform = '';
+      }
+    });
+  }
+}
+
+// ============================================================
+// EASTER EGG — konami code: up up down down left right left right B A
+// triggers a full-screen wednesday moment
+// ============================================================
+class EasterEgg {
+  constructor() {
+    this.code = ['ArrowUp','ArrowUp','ArrowDown','ArrowDown','ArrowLeft','ArrowRight','ArrowLeft','ArrowRight','b','a'];
+    this.pos = 0;
+    this.modal = this.createModal();
+    this.init();
+  }
+
+  createModal() {
+    const el = document.createElement('div');
+    el.style.cssText = `
+      position: fixed; inset: 0; z-index: 99999;
+      background: #000; display: none; align-items: center; justify-content: center;
+      flex-direction: column; cursor: pointer;
+      font-family: 'Courier New', monospace;
+    `;
+    el.innerHTML = `
+      <div style="text-align:center; padding: 40px; max-width: 600px;">
+        <div style="font-size: clamp(60px,12vw,120px); margin-bottom: 20px; filter: drop-shadow(0 0 20px #ff1744);">🖤</div>
+        <h2 style="color:#ff1744; font-size:clamp(18px,4vw,28px); letter-spacing:4px; text-transform:uppercase; margin:0 0 20px;">
+          you found it
+        </h2>
+        <p style="color:#555; font-size:14px; line-height:1.8; max-width:400px; margin:0 auto 30px;">
+          normal people don't type konami codes on dev portfolios at 2am.<br>
+          i respect that.
+        </p>
+        <p style="color:#ff1744; font-size:12px; letter-spacing:2px; opacity:0.6;">
+          click anywhere to leave
+        </p>
+      </div>
+    `;
+    el.addEventListener('click', () => {
+      el.style.display = 'none';
+    });
+    document.body.appendChild(el);
+    return el;
+  }
+
+  init() {
+    document.addEventListener('keydown', (e) => {
+      if (e.key === this.code[this.pos]) {
+        this.pos++;
+        if (this.pos === this.code.length) {
+          this.pos = 0;
+          this.trigger();
+        }
+      } else {
+        this.pos = 0;
+      }
+    });
+  }
+
+  trigger() {
+    this.modal.style.display = 'flex';
+    // brief screen flash
+    this.modal.style.background = '#ff1744';
+    setTimeout(() => { this.modal.style.background = '#000'; }, 80);
+  }
+}
+
+// ============================================================
+// EXTERNAL LINKS + KEYBOARD SHORTCUTS + SMOOTH SCROLL
 // ============================================================
 class ExternalLinks {
   constructor() {
@@ -688,68 +925,14 @@ class SmoothScroll {
 }
 
 // ============================================================
-// SPARKLE TRAIL — leaves tiny accent sparks behind the cursor
-// ============================================================
-class SparkleTrail {
-  constructor() {
-    this.sparks = [];
-    document.addEventListener('mousemove', (e) => {
-      if (Math.random() > 0.4) return; // throttle
-      this.spawn(e.clientX, e.clientY);
-    });
-    this.loop();
-  }
-
-  spawn(x, y) {
-    const spark = document.createElement('div');
-    spark.style.cssText = `
-      position: fixed; pointer-events: none; z-index: 9997;
-      width: ${Math.random() * 4 + 2}px; height: ${Math.random() * 4 + 2}px;
-      border-radius: 50%; background: var(--accent);
-      left: ${x}px; top: ${y}px;
-      transform: translate(-50%, -50%);
-      opacity: 0.8;
-      transition: none;
-    `;
-    document.body.appendChild(spark);
-    this.sparks.push({
-      el: spark,
-      x, y,
-      vx: (Math.random() - 0.5) * 3,
-      vy: (Math.random() - 0.5) * 3 - 1,
-      life: 1
-    });
-  }
-
-  loop() {
-    this.sparks = this.sparks.filter(s => {
-      s.x += s.vx;
-      s.y += s.vy;
-      s.vy += 0.12; // gravity
-      s.life -= 0.045;
-      s.el.style.left = s.x + 'px';
-      s.el.style.top = s.y + 'px';
-      s.el.style.opacity = s.life;
-      s.el.style.transform = `translate(-50%, -50%) scale(${s.life})`;
-      if (s.life <= 0) {
-        s.el.remove();
-        return false;
-      }
-      return true;
-    });
-    requestAnimationFrame(() => this.loop());
-  }
-}
-
-// ============================================================
-// PERFORMANCE MONITOR (existing, kept)
+// PERFORMANCE MONITOR
 // ============================================================
 class PerformanceMonitor {
   constructor() {
     if (performance.timing) {
       window.addEventListener('load', () => {
         const loadTime = performance.timing.loadEventEnd - performance.timing.navigationStart;
-        console.log(`Page loaded in ${loadTime}ms`);
+        console.log(`%cloaded in ${loadTime}ms`, 'color:#ff1744; font-family:monospace;');
       });
     }
   }
@@ -772,6 +955,7 @@ document.addEventListener('DOMContentLoaded', () => {
   new KeyboardShortcuts();
   new SmoothScroll();
   new AchievementAnimate();
+  new EasterEgg(); // always on, it's keyboard-only
 
   if (!STATE.reduced) {
     new SandPhoto();
@@ -780,7 +964,9 @@ document.addEventListener('DOMContentLoaded', () => {
     new RGBCardShift();
     new SkillScatter();
     new TypingEffect();
-    new SparkleTrail();
+    new GhostTrail();           // replaces SparkleTrail
+    new RageMode();             // hold click 2s
+    new SectionAmbience(particles); // bg color shifts per section
   }
 
   if (STATE.reduced) {
@@ -793,7 +979,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ============================================================
-// ANALYTICS (existing, kept)
+// ANALYTICS
 // ============================================================
 document.addEventListener("DOMContentLoaded", () => {
   const resumeBtn = document.getElementById("resume-btn");
